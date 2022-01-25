@@ -7,26 +7,26 @@ Base object for the "Optional Parameters Pattern".
 The beauty of this pattern is that you can achieve a method that can
 take the following simple calling style
 
-```
+```go
 obj.Method(mandatory1, mandatory2)
 ```
 
 or the following, if you want to modify its behavior with optional parameters
 
-```
+```go
 obj.Method(mandatory1, mandatory2, optional1, optional2, optional3)
 ```
 
 Intead of the more clunky zero value for optionals style
 
-```
+```go
 obj.Method(mandatory1, mandatory2, nil, "", 0)
 ```
 
 or the equally cluncky config object style, which requires you to create a
 struct with `NamesThatLookReallyLongBecauseItNeedsToIncludeMethodNamesConfig	
 
-```
+```go
 cfg := &ConfigForMethod{
  Optional1: ...,
  Optional2: ...,
@@ -38,25 +38,48 @@ obj.Method(mandatory1, mandatory2, &cfg)
 # SYNOPSIS 
 
 This library is intended to be a reusable component to implement
-a function with arguments that look like the following:
+an "Options" parameter pattern.
 
-```
+For example, given a function with arguments that look like the following:
+
+```go
 obj.Method(mandatory1, mandatory2, optional1, optional2, optional3, ...)
 ```
 
-Internally, we just declare this method as follows:
+We can change its signature to the following:
 
-```
-func (obj *Object) Method(m1 Type1, m2 Type2, options ...Option) {
+```go
+func (obj *Object) Method(mandatory1 Type1, mandatory2 Type2, options ...Option) {
   ...
 }
 ```
 
+This allows users to mix-and-match options, without needing to care about
+the ordering.
+
+Furthermre, it's really simple to "build" the list of arguments that may
+change depending on the use case as a slice of options, and pass them all in one go:
+
+```go
+if condition1 {
+  options = append(options, mypkg.WithFoo(...))
+}
+
+if condition2 {
+  options = append(options, mypkg.WithBar(...))
+}
+
+myobj.Method(options...)
+```
+
+# Option objects
+
 Option objects take two arguments, its identifier and the value it contains.
+
 The identifier can be anything, but it's usually better to use a an unexported
 empty struct so that only you have the ability to generate said option:
 
-```
+```go
 type identOptionalParamOne struct{}
 type identOptionalParamTwo struct{}
 type identOptionalParamThree struct{}
@@ -68,18 +91,18 @@ func WithOptionOne(v ...) Option {
 
 Then you can call the method we described above as
 
-```
+```go
 obj.Method(m1, m2, WithOptionOne(...), WithOptionTwo(...), WithOptionThree(...))
 ```
 
 Options should be parsed in a code that looks somewhat like this
 
-```
+```go
 func (obj *Object) Method(m1 Type1, m2 Type2, options ...Option) {
   paramOne := defaultValueParamOne
   for _, option := range options {
     switch option.Ident() {
-		case identOptionalParamOne{}:
+    case identOptionalParamOne{}:
       paramOne = option.Value().(...)
     }
   }
@@ -87,12 +110,16 @@ func (obj *Object) Method(m1 Type1, m2 Type2, options ...Option) {
 }
 ```
 
+The loop requires a bit of boilerplate, and admittedly, this is the main downside
+of this module. However, if you think you want use the Option as a Function pattern,
+please check the FAQ below for rationale.
+
 # Simple usage
 
 Most of the times all you need to do is to declare the Option type as an alias
 in your code:
 
-```
+```go
 package myawesomepkg
 
 import "github.com/lestrrat-go/option"
@@ -107,7 +134,7 @@ Then you can start definig options like they are described in the SYNOPSIS secti
 When you have multiple methods and options, and those options can only be passed to
 each one the methods, it's hard to see which options should be passed to which method.
 
-```
+```go
 func WithX() Option {}
 func WithY() Option {}
 
@@ -119,7 +146,7 @@ func (*Obj) Method2(options ...Option) {}
 In this case the easiest way to make it obvious is to put an extra layer around
 the options so that they have different types
 
-```
+```go
 type Method1Option interface {
   Option
   method1Option()
