@@ -170,13 +170,13 @@ func NewFoo(options ...Option) (*Foo, error) {
 
 This in itself is fine, but we think there are a few problems:
 
-## 1. It's hard to create a reusable "Option" type
+### 1. It's hard to create a reusable "Option" type
 
 We create many libraries using this optional pattern. We would like to provide a default base object. However, this function based approach is not reusuable because each "Option" type requires that it has a context-specific input type. For example, if the "Option" type in the previous example was `func(interface{}) error`, then its usability will significantly decrease because of the type conversion.
 
 This is not to say that this library's approach is better as it also requires type conversion to convert the _value_ of the option. However, part of the beauty of the original function based approach was the ease of its use, and we claim that this significantly decreases the merits of the function based approach.
 
-## 2. The receiver requires exported fields
+### 2. The receiver requires exported fields
 
 Part of the appeal for a function-based option pattern is by giving the option itself the ability to do what it wants, you open up the possibility of allowing third-parties to create options that do things that the library authors did not think about.
 
