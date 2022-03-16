@@ -17,13 +17,13 @@ or the following, if you want to modify its behavior with optional parameters
 obj.Method(mandatory1, mandatory2, optional1, optional2, optional3)
 ```
 
-Intead of the more clunky zero value for optionals style
+Instead of the more clunky zero value for optionals style
 
 ```go
 obj.Method(mandatory1, mandatory2, nil, "", 0)
 ```
 
-or the equally cluncky config object style, which requires you to create a
+or the equally clunky config object style, which requires you to create a
 struct with `NamesThatLookReallyLongBecauseItNeedsToIncludeMethodNamesConfig	
 
 ```go
@@ -57,7 +57,7 @@ func (obj *Object) Method(mandatory1 Type1, mandatory2 Type2, options ...Option)
 This allows users to mix-and-match options, without needing to care about
 the ordering.
 
-Furthermre, it's really simple to "build" the list of arguments that may
+Furthermore, it's really simple to "build" the list of arguments that may
 change depending on the use case as a slice of options, and pass them all in one go:
 
 ```go
@@ -127,7 +127,7 @@ import "github.com/lestrrat-go/option"
 type Option = option.Interface
 ```
 
-Then you can start definig options like they are described in the SYNOPSIS section.
+Then you can start defining options like they are described in the SYNOPSIS section.
 
 # Differentiating Options
 
@@ -226,6 +226,6 @@ Exported fields are absolutely no problem when you have a struct that represents
 
 Giving third parties complete access to exported fields is like handing out a loaded weapon to the users, and you are at their mercy.
 
-Of course, providing public APIs for everthing so you can validate and control concurrency is an option, but then ... it
+Of course, providing public APIs for everything so you can validate and control concurrency is an option, but then ... it
 's a lot of work, and you may have to provide APIs _only_ so that users can refer it in the option-configuration phase. That sounds like a lot of extra work.
 
