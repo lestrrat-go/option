@@ -1,3 +1,5 @@
+// This tools is experimental and is not officially supported. Use at your own peril.
+
 package main
 
 import (
