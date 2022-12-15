@@ -37,39 +37,54 @@ obj.Method(mandatory1, mandatory2, &cfg)
 
 # SYNOPSIS 
 
-This library is intended to be a reusable component to implement
-an "Options" parameter pattern.
+Create an "identifier" for the option. We recommend using an unexported empty struct,
+because
 
-For example, given a function with arguments that look like the following:
+1. It is uniquely identifiable globally
+1. Takes minimal space
+1. Since it's unexported, you do not have to worry about it leaking elsewhere or having it changed by consumers
 
 ```go
-obj.Method(mandatory1, mandatory2, optional1, optional2, optional3, ...)
+// an unexported empty struct
+type identFeatureX struct{} 
 ```
 
-We can change its signature to the following:
+Then define a method to create an option using this identifier. Here we assume
+that the option will be a boolean option.
 
 ```go
-func (obj *Object) Method(mandatory1 Type1, mandatory2 Type2, options ...Option) {
-  ...
+// this is optional, but for readability we usually use a wrapper
+// around option.Interface, or a type alias.
+type Option
+func WithFeatureX(v bool) Option {
+  // use the constructor to create a new option
+  return option.New(identFeatureX{}, v)
 }
 ```
 
-This allows users to mix-and-match options, without needing to care about
-the ordering.
+Now you can create an option, which essentially a two element tuple consisting
+of an identifier and its associated value.
 
-Furthermore, it's really simple to "build" the list of arguments that may
-change depending on the use case as a slice of options, and pass them all in one go:
+To consume this, you will need to create a function with variadic parameters,
+and iterate over the list looking for a particular identifier:
 
 ```go
-if condition1 {
-  options = append(options, mypkg.WithFoo(...))
+func MyAwesomeFunc( /* mandatory parameters omitted */, options ...[]Option) {
+  var enableFeatureX bool
+  // The nolint directive is recommended if you are using linters such
+  // as golangci-lint
+  //nolint:forcetypeassert 
+  for _, option := range options {
+    switch option.Ident() {
+    case identFeatureX{}:
+      enableFeatureX = option.Value().(bool)
+    // other cases omitted
+    }
+  }
+  if enableFeatureX {
+    ....
+  }
 }
-
-if condition2 {
-  options = append(options, mypkg.WithBar(...))
-}
-
-myobj.Method(options...)
 ```
 
 # Option objects
@@ -135,8 +150,8 @@ When you have multiple methods and options, and those options can only be passed
 each one the methods, it's hard to see which options should be passed to which method.
 
 ```go
-func WithX() Option {}
-func WithY() Option {}
+func WithX() Option { ... }
+func WithY() Option { ... }
 
 // Now, which of WithX/WithY go to which method?
 func (*Obj) Method1(options ...Option) {}
@@ -209,7 +224,7 @@ Part of the appeal for a function-based option pattern is by giving the option i
 
 ```go
 package thirdparty
-
+, but when I read drum sheet music, I kind of get thrown off b/c many times it says to hit the bass drum where I feel like it's a snare hit.
 func WithMyAwesomeOption( ... ) mypkg.Option  {
   return mypkg.Option(func(f *mypkg) error {
     f.X = ...
@@ -226,6 +241,5 @@ Exported fields are absolutely no problem when you have a struct that represents
 
 Giving third parties complete access to exported fields is like handing out a loaded weapon to the users, and you are at their mercy.
 
-Of course, providing public APIs for everything so you can validate and control concurrency is an option, but then ... it
-'s a lot of work, and you may have to provide APIs _only_ so that users can refer it in the option-configuration phase. That sounds like a lot of extra work.
+Of course, providing public APIs for everything so you can validate and control concurrency is an option, but then ... it's a lot of work, and you may have to provide APIs _only_ so that users can refer it in the option-configuration phase. That sounds like a lot of extra work.
 
