@@ -1,13 +1,10 @@
-module github.com/lestrrat-go/option/v2
+module github.com/lestrrat-go/option/v3
 
 go 1.23
 
 toolchain go1.23.9
 
-require (
-	github.com/lestrrat-go/blackmagic v1.0.3
-	github.com/stretchr/testify v1.10.0
-)
+require github.com/stretchr/testify v1.10.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
