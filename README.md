@@ -55,7 +55,8 @@ that the option will be a boolean option.
 ```go
 // this is optional, but for readability we usually use a wrapper
 // around option.Interface, or a type alias.
-type Option
+type Option = option.Interface
+
 func WithFeatureX(v bool) Option {
   // use the constructor to create a new option
   return option.New(identFeatureX{}, v)
@@ -69,15 +70,12 @@ To consume this, you will need to create a function with variadic parameters,
 and iterate over the list looking for a particular identifier:
 
 ```go
-func MyAwesomeFunc( /* mandatory parameters omitted */, options ...[]Option) {
+func MyAwesomeFunc( /* mandatory parameters omitted */, options ...Option) {
   var enableFeatureX bool
-  // The nolint directive is recommended if you are using linters such
-  // as golangci-lint
-  //nolint:forcetypeassert 
   for _, option := range options {
     switch option.Ident() {
     case identFeatureX{}:
-      enableFeatureX = option.Value().(bool)
+      enableFeatureX = option.MustGet[bool](option)
     // other cases omitted
     }
   }
@@ -91,7 +89,7 @@ func MyAwesomeFunc( /* mandatory parameters omitted */, options ...[]Option) {
 
 Option objects take two arguments, its identifier and the value it contains.
 
-The identifier can be anything, but it's usually better to use a an unexported
+The identifier can be anything, but it's usually better to use an unexported
 empty struct so that only you have the ability to generate said option:
 
 ```go
@@ -118,7 +116,7 @@ func (obj *Object) Method(m1 Type1, m2 Type2, options ...Option) {
   for _, option := range options {
     switch option.Ident() {
     case identOptionalParamOne{}:
-      paramOne = option.Value().(...)
+      paramOne = option.MustGet[ParamOneType](option)
     }
   }
   ...
@@ -129,6 +127,44 @@ The loop requires a bit of boilerplate, and admittedly, this is the main downsid
 of this module. However, if you think you want use the Option as a Function pattern,
 please check the FAQ below for rationale.
 
+# Extracting values
+
+There are multiple ways to extract the value from an option:
+
+## Using `Get[T]`
+
+`Get[T]` is a free function that extracts the value with type safety, returning a
+`(T, bool)` tuple:
+
+```go
+v, ok := option.Get[string](opt)
+if !ok {
+  // handle type mismatch
+}
+```
+
+## Using `MustGet[T]`
+
+`MustGet[T]` is like `Get[T]` but panics on type mismatch. Use this inside
+`switch` cases on `Ident()` where the type is guaranteed:
+
+```go
+switch opt.Ident() {
+case identName{}:
+  name := option.MustGet[string](opt)
+}
+```
+
+## Using `Value()` on concrete `*Option[T]`
+
+When you have a concrete `*Option[T]` (e.g., directly from `option.New`), you
+can call the typed `Value()` method:
+
+```go
+opt := option.New(identFoo{}, "hello")
+v := opt.Value() // v is string, not any
+```
+
 # Simple usage
 
 Most of the times all you need to do is to declare the Option type as an alias
@@ -137,7 +173,7 @@ in your code:
 ```go
 package myawesomepkg
 
-import "github.com/lestrrat-go/option"
+import "github.com/lestrrat-go/option/v3"
 
 type Option = option.Interface
 ```
@@ -171,7 +207,7 @@ type method1Option struct { Option }
 func (*method1Option) method1Option() {}
 
 func WithX() Method1Option {
-  return &methodOption{option.New(...)}
+  return &method1Option{option.New(...)}
 }
 
 func (*Obj) Method1(options ...Method1Option) {}
@@ -224,7 +260,7 @@ Part of the appeal for a function-based option pattern is by giving the option i
 
 ```go
 package thirdparty
-, but when I read drum sheet music, I kind of get thrown off b/c many times it says to hit the bass drum where I feel like it's a snare hit.
+
 func WithMyAwesomeOption( ... ) mypkg.Option  {
   return mypkg.Option(func(f *mypkg) error {
     f.X = ...
@@ -242,4 +278,3 @@ Exported fields are absolutely no problem when you have a struct that represents
 Giving third parties complete access to exported fields is like handing out a loaded weapon to the users, and you are at their mercy.
 
 Of course, providing public APIs for everything so you can validate and control concurrency is an option, but then ... it's a lot of work, and you may have to provide APIs _only_ so that users can refer it in the option-configuration phase. That sounds like a lot of extra work.
-
